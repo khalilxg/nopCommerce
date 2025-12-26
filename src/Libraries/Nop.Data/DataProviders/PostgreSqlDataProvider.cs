@@ -1,7 +1,6 @@
 ﻿using System.Data;
 using System.Data.Common;
 using LinqToDB;
-using LinqToDB.Common;
 using LinqToDB.Data;
 using LinqToDB.DataProvider;
 using LinqToDB.SqlQuery;
@@ -280,7 +279,7 @@ public partial class PostgreSqlDataProvider : BaseDataProvider, INopDataProvider
             entity.Id = dataContext.InsertWithInt32Identity(entity);
         }
         // Ignore when we try insert foreign entity via InsertWithInt32IdentityAsync method
-        catch (SqlException ex) when (ex.Message.StartsWith("Identity field must be defined for"))
+        catch (LinqToDBException ex) when (ex.Message.StartsWith("Identity field must be defined for"))
         {
             dataContext.Insert(entity);
         }
@@ -305,7 +304,7 @@ public partial class PostgreSqlDataProvider : BaseDataProvider, INopDataProvider
             entity.Id = await dataContext.InsertWithInt32IdentityAsync(entity);
         }
         // Ignore when we try insert foreign entity via InsertWithInt32IdentityAsync method
-        catch (SqlException ex) when (ex.Message.StartsWith("Identity field must be defined for"))
+        catch (LinqToDBException ex) when (ex.Message.StartsWith("Identity field must be defined for"))
         {
             await dataContext.InsertAsync(entity);
         }
