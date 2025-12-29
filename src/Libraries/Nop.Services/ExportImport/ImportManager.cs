@@ -470,7 +470,7 @@ public partial class ImportManager : IImportManager
     }
 
     /// <returns>A task that represents the asynchronous operation</returns>
-    protected virtual async Task<(string seName, bool isParentCategoryExists)> UpdateCategoryByXlsxAsync(Category category, PropertyManager<Category> manager, Dictionary<string, ValueTask<Category>> allCategories, IList<Store> allStores, bool isNew)
+    protected virtual async Task<(string seName, bool isParentCategoryExists)> UpdateCategoryByXlsxAsync(Category category, PropertyManager<Category> manager, Dictionary<string, Category> allCategories, IList<Store> allStores, bool isNew)
     {
         var seName = string.Empty;
         var isParentCategoryExists = true;
@@ -501,7 +501,7 @@ public partial class ImportManager : IImportManager
                 case "ParentCategoryId":
                     if (!isParentCategorySet)
                     {
-                        var parentCategory = await await allCategories.Values.FirstOrDefaultAwaitAsync(async c => (await c).Id == property.IntValue);
+                        var parentCategory = allCategories.Values.FirstOrDefault(c => c.Id == property.IntValue);
                         isParentCategorySet = parentCategory != null;
 
                         isParentCategoryExists = isParentCategorySet || property.IntValue == 0;
@@ -518,9 +518,9 @@ public partial class ImportManager : IImportManager
                         {
                             var parentCategory = allCategories.TryGetValue(categoryName, out var value)
                                 //try find category by full name with all parent category names
-                                ? await value
+                                ? value
                                 //try find category by name
-                                : await await allCategories.Values.FirstOrDefaultAwaitAsync(async c => (await c).Name.Equals(categoryName, StringComparison.InvariantCulture));
+                                : allCategories.Values.FirstOrDefault(c => c.Name.Equals(categoryName, StringComparison.InvariantCulture));
 
                             if (parentCategory != null)
                             {
@@ -595,12 +595,12 @@ public partial class ImportManager : IImportManager
     }
 
     /// <returns>A task that represents the asynchronous operation</returns>
-    protected virtual async Task<(Category category, bool isNew, string curentCategoryBreadCrumb)> GetCategoryFromXlsxAsync(PropertyManager<Category> manager, IXLWorksheet worksheet, int iRow, Dictionary<string, ValueTask<Category>> allCategories)
+    protected virtual async Task<(Category category, bool isNew, string curentCategoryBreadCrumb)> GetCategoryFromXlsxAsync(PropertyManager<Category> manager, IXLWorksheet worksheet, int iRow, Dictionary<string, Category> allCategories)
     {
         manager.ReadDefaultFromXlsx(worksheet, iRow);
 
         //try get category from database by ID
-        var category = await await allCategories.Values.FirstOrDefaultAwaitAsync(async c => (await c).Id == manager.GetDefaultProperty("Id")?.IntValue);
+        var category = allCategories.Values.FirstOrDefault(c => c.Id == manager.GetDefaultProperty("Id")?.IntValue);
 
         if (_catalogSettings.ExportImportCategoriesUsingCategoryName && category == null)
         {
@@ -609,9 +609,9 @@ public partial class ImportManager : IImportManager
             {
                 category = allCategories.TryGetValue(categoryName, out var value)
                     //try find category by full name with all parent category names
-                    ? await value
+                    ? value
                     //try find category by name
-                    : await await allCategories.Values.FirstOrDefaultAwaitAsync(async c => (await c).Name.Equals(categoryName, StringComparison.InvariantCulture));
+                    : allCategories.Values.FirstOrDefault(c => c.Name.Equals(categoryName, StringComparison.InvariantCulture));
             }
         }
 
@@ -637,7 +637,7 @@ public partial class ImportManager : IImportManager
     }
 
     /// <returns>A task that represents the asynchronous operation</returns>
-    protected virtual async Task SaveCategoryAsync(bool isNew, Category category, Dictionary<string, ValueTask<Category>> allCategories, string curentCategoryBreadCrumb, bool setSeName, string seName)
+    protected virtual async Task SaveCategoryAsync(bool isNew, Category category, Dictionary<string, Category> allCategories, string curentCategoryBreadCrumb, bool setSeName, string seName)
     {
         if (isNew)
             await _categoryService.InsertCategoryAsync(category);
@@ -645,8 +645,8 @@ public partial class ImportManager : IImportManager
             await _categoryService.UpdateCategoryAsync(category);
 
         var categoryBreadCrumb = await _categoryService.GetFormattedBreadCrumbAsync(category);
-        if (!allCategories.ContainsKey(categoryBreadCrumb))
-            allCategories.Add(categoryBreadCrumb, new ValueTask<Category>(category));
+        allCategories.TryAdd(categoryBreadCrumb, category);
+        
         if (!string.IsNullOrEmpty(curentCategoryBreadCrumb) && allCategories.ContainsKey(curentCategoryBreadCrumb) &&
             categoryBreadCrumb != curentCategoryBreadCrumb)
             allCategories.Remove(curentCategoryBreadCrumb);
@@ -2082,14 +2082,14 @@ public partial class ImportManager : IImportManager
         var allProductsCategoryIds = await _categoryService.GetProductCategoryIdsAsync(allProductsBySku.Select(p => p.Id).ToArray());
 
         //performance optimization, load all categories in one SQL request
-        Dictionary<CategoryKey, Category> allCategories = new();
+        Dictionary<CategoryKey, Category> allCategories;
         try
         {
             var allCategoryList = await _categoryService.GetAllCategoriesAsync(showHidden: true);
 
             allCategories = await allCategoryList
                 .WhereAwait(async c => await _categoryService.CanVendorAddProductsAsync(c, allCategoryList))
-                .ToDictionaryAwaitAsync(async c =>
+                .ToDictionaryAsync(async (c, _) =>
                 {
                     var keyName = await _categoryService.GetFormattedBreadCrumbAsync(c, allCategoryList);
                     return new CategoryKey(keyName, c, c.LimitedToStores ? (await _storeMappingService.GetStoresIdsWithAccessAsync(c)).ToList() : new List<int>());
@@ -3032,7 +3032,7 @@ public partial class ImportManager : IImportManager
         var allCategories = await (await _categoryService
                 .GetAllCategoriesAsync(showHidden: true))
             .GroupByAwait(async c => await _categoryService.GetFormattedBreadCrumbAsync(c))
-            .ToDictionaryAsync(c => c.Key, c => c.FirstAsync());
+            .ToDictionaryAsync(c => c.Key, c => c.First());
 
         var saveNextTime = new List<int>();
 
