@@ -15,15 +15,19 @@ public static class UrlHelperExtensions
     public static IUrlHelper GetUrlHelper()
     {
         var httpContext = EngineContext.Current.Resolve<IHttpContextAccessor>().HttpContext;
-        var routeData = httpContext.GetRouteData() ?? new RouteData();
-        var urlHelperFactory = EngineContext.Current.Resolve<IUrlHelperFactory>();
 
+        if (httpContext == null)
+            return null;
+
+        var routeData = httpContext.GetRouteData();
         var endpoint = httpContext.GetEndpoint();
         var actionDescriptor = endpoint?.Metadata.GetMetadata<ActionDescriptor>();
 
-        var actionContext = new ActionContext(httpContext, routeData, actionDescriptor);
-        if (actionContext == null)
+        if (actionDescriptor == null)
             return null;
+
+        var actionContext = new ActionContext(httpContext, routeData, actionDescriptor);
+        var urlHelperFactory = EngineContext.Current.Resolve<IUrlHelperFactory>();
 
         return urlHelperFactory.GetUrlHelper(actionContext);
     }
