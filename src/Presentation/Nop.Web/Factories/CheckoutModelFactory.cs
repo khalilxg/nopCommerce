@@ -1,4 +1,7 @@
-﻿using Nop.Core;
+﻿using System.Globalization;
+using DocumentFormat.OpenXml.Wordprocessing;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Nop.Core;
 using Nop.Core.Domain.Common;
 using Nop.Core.Domain.Customers;
 using Nop.Core.Domain.Orders;
@@ -436,6 +439,35 @@ public partial class CheckoutModelFactory : ICheckoutModelFactory
             //notify about shipping from multiple locations
             if (_shippingSettings.NotifyCustomerAboutShippingFromMultipleLocations) 
                 model.NotifyCustomerAboutShippingFromMultipleLocations = getShippingOptionResponse.ShippingFromMultipleLocations;
+
+            var language = await _workContext.GetWorkingLanguageAsync();
+            foreach (var shippingMethod in model.ShippingMethods)
+            {
+                var transitDays = shippingMethod.ShippingOption.TransitDays;
+                var desiredDelivery = new DesiredDeliveryDateModel
+                {
+                    Enabled = _shippingSettings.AllowCustomerToChooseDeliveryDate && transitDays.HasValue
+                };
+
+                if (desiredDelivery.Enabled)
+                {
+                    var startDate = DateTime.UtcNow.Date.AddDays(transitDays.Value);
+
+                    desiredDelivery.AvailableDates = Enumerable.Range(0, _shippingSettings.DeliveryDateRangeDays)
+                        .Select(i => startDate.AddDays(i))
+                        .Select(date => new SelectListItem
+                        {
+                            Value = date.ToString("yyyy-MM-dd"),
+                            Text = date.ToString("D", new CultureInfo(language.LanguageCulture))
+                        })
+                        .ToList();
+
+                    desiredDelivery.SelectedDate = desiredDelivery.AvailableDates.FirstOrDefault()?.Value ?? string.Empty;
+                }
+
+                shippingMethod.DesiredDeliveryDate = desiredDelivery;
+            }
+
         }
         else
             foreach (var error in getShippingOptionResponse.Errors)

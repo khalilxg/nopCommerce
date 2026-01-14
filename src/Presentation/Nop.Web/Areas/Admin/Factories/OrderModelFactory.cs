@@ -638,6 +638,9 @@ public partial class OrderModelFactory : IOrderModelFactory
         if (order.ShippingStatus == ShippingStatus.ShippingNotRequired)
             return;
 
+        if (order.DesiredDeliveryDateUtc.HasValue)
+            model.DesiredDeliveryDate = await _dateTimeHelper.ConvertToUserTimeAsync(order.DesiredDeliveryDateUtc.Value, DateTimeKind.Utc);
+
         model.IsShippable = true;
         model.ShippingMethod = order.ShippingMethod;
         model.CanAddNewShipments = await _orderService.HasItemsToAddToShipmentAsync(order);
@@ -1052,7 +1055,7 @@ public partial class OrderModelFactory : IOrderModelFactory
                     Id = order.Id,
                     OrderStatusId = order.OrderStatusId,
                     PaymentStatusId = order.PaymentStatusId,
-                    ShippingStatusId = order.ShippingStatusId,
+                    ShippingStatusId = order.ShippingStatusId,                    
                     CustomerEmail = billingAddress.Email,
                     CustomerFullName = $"{billingAddress.FirstName} {billingAddress.LastName}",
                     CustomerId = order.CustomerId,

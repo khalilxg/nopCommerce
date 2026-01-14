@@ -37,6 +37,17 @@
                                     @Html.Raw(shippingMethod.Description)
                                 </div>
                             }
+                            @if (shippingMethod.DesiredDeliveryDate?.Enabled ?? false)
+                            {
+                                <div class="delivery-date-selector">
+                                    <label for="deliverydate_@(i)_@(shippingMethod.Name)">@T("Checkout.SelectDesiredDeliveryDate")</label>
+                                    <select id="deliverydate_@(i)_@(shippingMethod.Name)"
+                                            name="ShippingMethods[@(i)].DesiredDeliveryDate.SelectedDate"
+                                            asp-for="@shippingMethod.DesiredDeliveryDate.SelectedDate"
+                                            asp-items="@shippingMethod.DesiredDeliveryDate.AvailableDates">
+                                    </select>
+                                </div>
+                            }
                         </li>
                     }
                 </ul>
