@@ -247,7 +247,7 @@ public abstract partial class BaseDataProvider
         using var dataContext = CreateDataConnection();
         dataContext.Update(entity);
     }
-
+    
     /// <summary>
     /// Updates records in table, using values from entity parameter.
     /// Records to update are identified by match on primary key value from obj value.

@@ -1,6 +1,5 @@
 ﻿using System.Threading.RateLimiting;
 using FluentValidation;
-using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
@@ -10,6 +9,9 @@ using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json.Serialization;
 using Nop.Core;
 using Nop.Core.Configuration;
@@ -22,6 +24,8 @@ using Nop.Services.ArtificialIntelligence;
 using Nop.Services.Authentication;
 using Nop.Services.Authentication.External;
 using Nop.Services.Common;
+using Nop.Web.Framework.ClientsideFluentValidation;
+using Nop.Web.Framework.Mvc.Filters;
 using Nop.Web.Framework.Mvc.ModelBinding;
 using Nop.Web.Framework.Mvc.ModelBinding.Binders;
 using Nop.Web.Framework.Mvc.Routing;
@@ -339,7 +343,7 @@ public static class ServiceCollectionExtensions
         });
 
         //add fluent validation
-        services.AddFluentValidationAutoValidation().AddFluentValidationClientsideAdapters();
+        addFluentValidationAutoValidation(services);
 
         //register all available validators from Nop assemblies
         var assemblies = mvcBuilder.PartManager.ApplicationParts
@@ -352,6 +356,18 @@ public static class ServiceCollectionExtensions
         mvcBuilder.AddControllersAsServices();
 
         return mvcBuilder;
+
+        void addFluentValidationAutoValidation(IServiceCollection serviceCollection)
+        {
+            //create a default instance of the `ModelStateInvalidFilter` to access the non static property `Order` in a static context.
+            var modelStateInvalidFilter = new ModelStateInvalidFilter(new ApiBehaviorOptions { InvalidModelStateResponseFactory = _ => new OkResult() }, NullLogger.Instance);
+
+            //make sure we insert the `FluentValidationAutoValidationActionFilter` before the built-in `ModelStateInvalidFilter` to prevent it short-circuiting the request.
+            serviceCollection.Configure<MvcOptions>(options => options.Filters.Add<AutoValidationActionFilter>(modelStateInvalidFilter.Order - 1));
+            
+            serviceCollection.TryAddSingleton(ValidatorOptions.Global);
+            serviceCollection.TryAddEnumerable(ServiceDescriptor.Singleton<IConfigureOptions<MvcViewOptions>, ClientsideFluentValidationViewOptionsSetup>(s => new ClientsideFluentValidationViewOptionsSetup(null, s.GetService<IHttpContextAccessor>())));
+        }
     }
 
     /// <summary>
