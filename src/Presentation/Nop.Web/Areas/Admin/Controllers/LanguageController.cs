@@ -303,7 +303,7 @@ public partial class LanguageController : BaseAdminController
     //ValidateAttribute is used to force model validation
     [HttpPost]
     [CheckPermission(StandardPermission.Configuration.MANAGE_LANGUAGES)]
-    public virtual async Task<IActionResult> ResourceAdd(int languageId, [Validate]LocaleResourceModel model)
+    public virtual async Task<IActionResult> ResourceAdd(int languageId, [Validate] LocaleResourceModel model)
     {
         if (!ModelState.IsValid)
             return ErrorJson(ModelState.SerializeErrors());
