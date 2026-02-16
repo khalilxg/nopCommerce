@@ -29,7 +29,7 @@ public partial class RegexClientValidator : ClientValidatorBase
         if (Validator is not IRegularExpressionValidator regexVal)
             return;
 
-        var message = BuildMessage(context, "RegularExpressionValidator");
+        var message = BuildMessage(messageFormatter => messageFormatter, languageManager => languageManager.GetString("RegularExpressionValidator"));
 
         context.Attributes.TryAdd("data-val", "true");
         context.Attributes.TryAdd("data-val-regex", message);

@@ -30,8 +30,8 @@ public partial class RangeMaxClientValidator : ClientValidatorBase
         if (Validator is not IComparisonValidator rangeValidator || rangeValidator.ValueToCompare == null)
             return;
 
-        var message = BuildMessage(context, messageFormatter => messageFormatter
-            .AppendArgument("ComparisonValue", rangeValidator.ValueToCompare), "LessThanOrEqualValidator");
+        var message = BuildMessage(messageFormatter => messageFormatter
+            .AppendArgument("ComparisonValue", rangeValidator.ValueToCompare), languageManager => languageManager.GetString("LessThanOrEqualValidator"));
 
         context.Attributes.TryAdd("data-val", "true");
         context.Attributes.TryAdd("data-val-range", message);

@@ -29,7 +29,7 @@ public partial class LengthClientValidator : ClientValidatorBase
         if (Validator is not ILengthValidator lengthVal)
             return;
 
-        var message = BuildMessage(context, messageFormatter => messageFormatter
+        var message = BuildMessage(messageFormatter => messageFormatter
             .AppendArgument("MinLength", lengthVal.Min)
             .AppendArgument("MaxLength", lengthVal.Max), languageManager =>
         {

@@ -25,7 +25,7 @@ public partial class CreditCardClientValidator : ClientValidatorBase
     /// <param name="context">The <see cref="T:Microsoft.AspNetCore.Mvc.ModelBinding.Validation.ClientModelValidationContext" /></param>
     public override void AddValidation(ClientModelValidationContext context)
     {
-        var message = BuildMessage(context, "CreditCardValidator");
+        var message = BuildMessage(messageFormatter => messageFormatter, languageManager => languageManager.GetString("CreditCardValidator"));
 
         context.Attributes.TryAdd("data-val", "true");
         context.Attributes.TryAdd("data-val-creditcard", message);

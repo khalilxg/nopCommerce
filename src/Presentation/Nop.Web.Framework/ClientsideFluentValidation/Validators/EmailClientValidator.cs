@@ -25,7 +25,8 @@ public partial class EmailClientValidator : ClientValidatorBase
     /// <param name="context">The <see cref="T:Microsoft.AspNetCore.Mvc.ModelBinding.Validation.ClientModelValidationContext" /></param>
     public override void AddValidation(ClientModelValidationContext context)
     {
-        var message = BuildMessage(context, "EmailValidator");
+        var message = BuildMessage(messageFormatter => messageFormatter, languageManager => languageManager.GetString("EmailValidator"));
+        
         context.Attributes.TryAdd("data-val", "true");
         context.Attributes.TryAdd("data-val-email", message);
     }

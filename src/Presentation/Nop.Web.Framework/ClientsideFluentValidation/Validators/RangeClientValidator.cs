@@ -30,9 +30,9 @@ public partial class RangeClientValidator : ClientValidatorBase
         if (Validator is not IBetweenValidator rangeValidator || rangeValidator.To == null || rangeValidator.From == null)
             return;
 
-        var message = BuildMessage(context, messageFormatter => messageFormatter
+        var message = BuildMessage(messageFormatter => messageFormatter
             .AppendArgument("From", rangeValidator.From)
-            .AppendArgument("To", rangeValidator.To), "InclusiveBetween_Simple");
+            .AppendArgument("To", rangeValidator.To), languageManager => languageManager.GetString("InclusiveBetween_Simple"));
 
         context.Attributes.TryAdd("data-val", "true");
         context.Attributes.TryAdd("data-val-range", message);

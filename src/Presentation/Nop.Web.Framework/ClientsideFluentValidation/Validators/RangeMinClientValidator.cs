@@ -30,8 +30,8 @@ public partial class RangeMinClientValidator : ClientValidatorBase
         if (Validator is not IComparisonValidator rangeValidator || rangeValidator.ValueToCompare == null)
             return;
 
-        var message = BuildMessage(context, messageFormatter => messageFormatter
-            .AppendArgument("ComparisonValue", rangeValidator.ValueToCompare), "GreaterThanOrEqualValidator");
+        var message = BuildMessage(messageFormatter => messageFormatter
+            .AppendArgument("ComparisonValue", rangeValidator.ValueToCompare), languageManager => languageManager.GetString("GreaterThanOrEqualValidator"));
 
         context.Attributes.TryAdd("data-val", "true");
         context.Attributes.TryAdd("data-val-range", message);

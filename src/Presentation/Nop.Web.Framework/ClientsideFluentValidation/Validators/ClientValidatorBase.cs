@@ -3,7 +3,7 @@ using FluentValidation.Internal;
 using FluentValidation.Resources;
 using FluentValidation.Validators;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
-using Microsoft.Extensions.DependencyInjection;
+using Nop.Core.Infrastructure;
 
 namespace Nop.Web.Framework.ClientsideFluentValidation.Validators;
 
@@ -23,16 +23,17 @@ public abstract partial class ClientValidatorBase : IClientModelValidator
     #endregion
 
     #region Utilities
-    
+
     /// <summary>
     /// Constructs the final message from the specified template
     /// </summary>
-    /// <param name="validatorConfiguration">Configuration options for validators</param>
     /// <param name="messageFormatter">Function to get assists in the construction of validation messages</param>
     /// <param name="defaultErrorMessage">Function to get default error message</param>
     /// <returns>The message with placeholders replaced with their appropriate values</returns>
-    protected virtual string BuildMessage(ValidatorConfiguration validatorConfiguration, Func<MessageFormatter, MessageFormatter> messageFormatter, Func<ILanguageManager, string> defaultErrorMessage)
+    protected virtual string BuildMessage(Func<MessageFormatter, MessageFormatter> messageFormatter,
+        Func<ILanguageManager, string> defaultErrorMessage)
     {
+        var validatorConfiguration = EngineContext.Current.Resolve<ValidatorConfiguration>();
         string message;
 
         try
@@ -44,54 +45,8 @@ public abstract partial class ClientValidatorBase : IClientModelValidator
             message = defaultErrorMessage(validatorConfiguration.LanguageManager);
         }
 
-        return messageFormatter(validatorConfiguration.MessageFormatterFactory().AppendPropertyName(Rule.GetDisplayName(null))).BuildMessage(message);
-    }
-
-    /// <summary>
-    /// Constructs the final message from the specified template
-    /// </summary>
-    /// <param name="validatorConfiguration">Configuration options for validators</param>
-    /// <param name="messageFormatter">Function to get assists in the construction of validation messages</param>
-    /// <param name="translatedStringKey">The default translated string key</param>
-    /// <returns>The message with placeholders replaced with their appropriate values</returns>
-    protected virtual string BuildMessage(ValidatorConfiguration validatorConfiguration, Func<MessageFormatter, MessageFormatter> messageFormatter, string translatedStringKey)
-    {
-        return BuildMessage(validatorConfiguration, messageFormatter, languageManager => languageManager.GetString(translatedStringKey));
-    }
-
-    /// <summary>
-    /// Constructs the final message from the specified template
-    /// </summary>
-    /// <param name="context">The <see cref="T:Microsoft.AspNetCore.Mvc.ModelBinding.Validation.ClientModelValidationContext" /></param>
-    /// <param name="messageFormatter">Function to get assists in the construction of validation messages</param>
-    /// <param name="defaultErrorMessage">Function to get default error message</param>
-    /// <returns>The message with placeholders replaced with their appropriate values</returns>
-    protected virtual string BuildMessage(ClientModelValidationContext context, Func<MessageFormatter, MessageFormatter> messageFormatter, Func<ILanguageManager, string> defaultErrorMessage)
-    {
-        return BuildMessage(context.ActionContext.HttpContext.RequestServices.GetRequiredService<ValidatorConfiguration>(), messageFormatter, defaultErrorMessage);
-    }
-
-    /// <summary>
-    /// Constructs the final message from the specified template
-    /// </summary>
-    /// <param name="context">The <see cref="T:Microsoft.AspNetCore.Mvc.ModelBinding.Validation.ClientModelValidationContext" /></param>
-    /// <param name="messageFormatter">Function to get assists in the construction of validation messages</param>
-    /// <param name="translatedStringKey">The default translated string key</param>
-    /// <returns>The message with placeholders replaced with their appropriate values</returns>
-    protected virtual string BuildMessage(ClientModelValidationContext context, Func<MessageFormatter, MessageFormatter> messageFormatter, string translatedStringKey)
-    {
-        return BuildMessage(context, messageFormatter, languageManager => languageManager.GetString(translatedStringKey));
-    }
-
-    /// <summary>
-    /// Constructs the final message from the specified template
-    /// </summary>
-    /// <param name="context">The <see cref="T:Microsoft.AspNetCore.Mvc.ModelBinding.Validation.ClientModelValidationContext" /></param>
-    /// <param name="translatedStringKey">The default translated string key</param>
-    /// <returns>The message with placeholders replaced with their appropriate values</returns>
-    protected virtual string BuildMessage(ClientModelValidationContext context, string translatedStringKey)
-    {
-        return BuildMessage(context, messageFormatter => messageFormatter, languageManager => languageManager.GetString(translatedStringKey));
+        return messageFormatter(validatorConfiguration.MessageFormatterFactory()
+            .AppendPropertyName(Rule.GetDisplayName(null))).BuildMessage(message);
     }
 
     #endregion

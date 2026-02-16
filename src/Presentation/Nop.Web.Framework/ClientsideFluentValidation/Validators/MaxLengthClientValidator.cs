@@ -1,5 +1,6 @@
 ﻿using FluentValidation;
 using FluentValidation.Internal;
+using FluentValidation.Resources;
 using FluentValidation.Validators;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
@@ -29,9 +30,9 @@ public partial class MaxLengthClientValidator : ClientValidatorBase
         if (Validator is not ILengthValidator lengthVal)
             return;
 
-        var message = BuildMessage(context, messageFormatter => messageFormatter
+        var message = BuildMessage(messageFormatter => messageFormatter
             .AppendArgument("MinLength", lengthVal.Min)
-            .AppendArgument("MaxLength", lengthVal.Max), "MaximumLength_Simple");
+            .AppendArgument("MaxLength", lengthVal.Max), languageManager => languageManager.GetString("MaximumLength_Simple"));
 
         context.Attributes.TryAdd("data-val", "true");
         context.Attributes.TryAdd("data-val-maxlength", message);

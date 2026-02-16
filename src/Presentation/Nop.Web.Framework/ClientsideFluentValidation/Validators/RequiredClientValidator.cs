@@ -25,7 +25,7 @@ internal class RequiredClientValidator : ClientValidatorBase
     /// <param name="context">The <see cref="T:Microsoft.AspNetCore.Mvc.ModelBinding.Validation.ClientModelValidationContext" /></param>
     public override void AddValidation(ClientModelValidationContext context)
     {
-        var message = BuildMessage(context, "NotEmptyValidator");
+        var message = BuildMessage(messageFormatter => messageFormatter, languageManager => languageManager.GetString("NotEmptyValidator"));
 
         context.Attributes.TryAdd("data-val", "true");
         context.Attributes.TryAdd("data-val-required", message);

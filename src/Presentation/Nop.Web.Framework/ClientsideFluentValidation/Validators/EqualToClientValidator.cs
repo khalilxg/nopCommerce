@@ -3,8 +3,8 @@ using FluentValidation;
 using FluentValidation.Internal;
 using FluentValidation.Validators;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
-using Microsoft.Extensions.DependencyInjection;
 using Nop.Core;
+using Nop.Core.Infrastructure;
 
 namespace Nop.Web.Framework.ClientsideFluentValidation.Validators;
 
@@ -32,15 +32,14 @@ public partial class EqualToClientValidator : ClientValidatorBase
         if (((IComparisonValidator)Validator).MemberToCompare is not PropertyInfo propertyToCompare)
             return;
 
-        var validatorConfiguration = context.ActionContext.HttpContext.RequestServices.GetRequiredService<ValidatorConfiguration>();
+        var validatorConfiguration = EngineContext.Current.Resolve<ValidatorConfiguration>();
 
         var comparisonDisplayName =
             validatorConfiguration.DisplayNameResolver(Rule.TypeToValidate, propertyToCompare, null)
             ?? CommonHelper.SplitCamelCaseWord(propertyToCompare.Name);
 
-        var message = BuildMessage(validatorConfiguration,
-            messageFormater => messageFormater.AppendArgument("ComparisonValue", comparisonDisplayName),
-            "EqualValidator");
+        var message = BuildMessage(messageFormater => messageFormater.AppendArgument("ComparisonValue", comparisonDisplayName),
+            languageManager => languageManager.GetString("EqualValidator"));
 
         context.Attributes.TryAdd("data-val", "true");
         context.Attributes.TryAdd("data-val-equalto", message);
