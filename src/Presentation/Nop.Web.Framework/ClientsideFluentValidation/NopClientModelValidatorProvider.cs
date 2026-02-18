@@ -52,7 +52,7 @@ public class NopClientModelValidatorProvider : IClientModelValidatorProvider
 
         //allow third-party handlers to associate custom validators
         EngineContext.Current.Resolve<IEventPublisher>()
-            .PublishAsync(new ClientModelValidatorsCreatedEvent(clientValidatorFactories))
+            .PublishAsync(new ClientModelValidatorsCreatedEvent(clientValidatorFactories, validationRule, ruleComponent))
             .Wait();
 
         var type = ruleComponent.Validator.GetType();
@@ -137,15 +137,20 @@ public class NopClientModelValidatorProvider : IClientModelValidatorProvider
             context.Results.Add(new() { IsReusable = false });
         }
 
-        if (!context.ModelMetadata.ModelType.IsValueType || Nullable.GetUnderlyingType(context.ModelMetadata.ModelType) != null)
-            return;
-
-        var fvHasRequiredRule = context.Results.Any(x => x.Validator is RequiredClientValidator);
-        if (!fvHasRequiredRule)
-            return;
-
-        var dataAnnotationsRequiredRule = context.Results.FirstOrDefault(x => x.Validator is RequiredAttributeAdapter);
-        context.Results.Remove(dataAnnotationsRequiredRule);
+        //if the property is a non-nullable value type, then MVC will have already generated a Required rule
+        if (context.ModelMetadata.ModelType.IsValueType &&
+            Nullable.GetUnderlyingType(context.ModelMetadata.ModelType) == null)
+        {
+            var fvHasRequiredRule = context.Results.Any(x => x.Validator is RequiredClientValidator);
+            
+            //if we've provided our own Required rule, then remove the MVC one
+            if (fvHasRequiredRule)
+            {
+                var dataAnnotationsRequiredRule =
+                    context.Results.FirstOrDefault(x => x.Validator is RequiredAttributeAdapter);
+                context.Results.Remove(dataAnnotationsRequiredRule);
+            }
+        }
     }
 
     #endregion

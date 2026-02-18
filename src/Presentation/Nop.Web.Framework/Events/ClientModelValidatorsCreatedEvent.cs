@@ -1,4 +1,7 @@
-﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
+﻿using FluentValidation;
+using FluentValidation.Internal;
+using FluentValidation.Validators;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace Nop.Web.Framework.Events;
 
@@ -19,9 +22,13 @@ public partial class ClientModelValidatorsCreatedEvent
     /// Ctor
     /// </summary>
     /// <param name="clientValidatorFactories">Dictionary of client side model validators</param>
-    public ClientModelValidatorsCreatedEvent(Dictionary<Type, IClientModelValidator> clientValidatorFactories)
+    /// <param name="rule">Rule associated with a property</param>
+    /// <param name="component">Individual component within a rule with a validator attached</param>
+    public ClientModelValidatorsCreatedEvent(Dictionary<Type, IClientModelValidator> clientValidatorFactories, IValidationRule rule, IRuleComponent component)
     {
         _clientValidatorFactories = clientValidatorFactories;
+        Rule = rule;
+        Component = component;
     }
 
     #endregion
@@ -47,6 +54,25 @@ public partial class ClientModelValidatorsCreatedEvent
 
         return true;
     }
+
+    #endregion
+
+    #region Properties
+
+    /// <summary>
+    /// Gets the custom property validator
+    /// </summary>
+    public virtual IPropertyValidator Validator => Component.Validator;
+
+    /// <summary>
+    /// Gets a rule associated with a property
+    /// </summary>
+    public virtual IValidationRule Rule { get; }
+
+    /// <summary>
+    /// Gets an individual component within a rule with a validator attached
+    /// </summary>
+    public virtual IRuleComponent Component { get; }
 
     #endregion
 }
