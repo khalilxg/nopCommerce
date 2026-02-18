@@ -7,7 +7,7 @@ namespace Nop.Web.Framework.ClientsideFluentValidation.Validators;
 /// <summary>
 /// Represent the required client validator
 /// </summary>
-internal class RequiredClientValidator : ClientValidatorBase
+public partial class RequiredClientValidator : ClientValidatorBase
 {
     #region Ctor
 

@@ -27,12 +27,14 @@ public class NopClientModelValidatorProvider : IClientModelValidatorProvider
     /// <returns>Appropriate client side validator or null</returns>
     protected virtual IClientModelValidator GetModelValidator(IValidationRule validationRule, IRuleComponent ruleComponent)
     {
+        //no need to look for validators with a rule set
+        //it's used to prevent auto-validation of child models
         if (validationRule?.RuleSets?.Any(rs => rs.Equals(NopValidationDefaults.ValidationRuleSet)) ?? false)
             return null;
 
-        var type = ruleComponent.Validator.GetType();
-
-        Dictionary<Type, IClientModelValidator> clientValidatorFactories = new() {
+        //default validator implementations
+        Dictionary<Type, IClientModelValidator> clientValidatorFactories = new()
+        {
             { typeof(INotNullValidator), new RequiredClientValidator(validationRule, ruleComponent) },
             { typeof(INotEmptyValidator), new RequiredClientValidator(validationRule, ruleComponent) },
             { typeof(IEmailValidator), new EmailClientValidator(validationRule, ruleComponent) },
@@ -48,9 +50,12 @@ public class NopClientModelValidatorProvider : IClientModelValidatorProvider
             { typeof(ICreditCardValidator), new CreditCardClientValidator(validationRule, ruleComponent) },
         };
 
+        //allow third-party handlers to associate custom validators
         EngineContext.Current.Resolve<IEventPublisher>()
-            .PublishAsync(new ClientModelValidatorsCreatedEvent(clientValidatorFactories)).Wait();
+            .PublishAsync(new ClientModelValidatorsCreatedEvent(clientValidatorFactories))
+            .Wait();
 
+        var type = ruleComponent.Validator.GetType();
         var validator = clientValidatorFactories
             .FirstOrDefault(x => x.Key.IsAssignableFrom(type))
             .Value;
@@ -70,10 +75,10 @@ public class NopClientModelValidatorProvider : IClientModelValidatorProvider
         ArgumentNullException.ThrowIfNull(httpContextAccessor?.HttpContext);
 
         var modelType = context.ModelMetadata.ContainerType;
-
         if (modelType == null)
             return null;
-        
+
+        //try to get a validator descriptor and cache it within the request
         Dictionary<Type, IValidatorDescriptor> cache = null;
 
         if (httpContextAccessor.HttpContext.Items.TryGetValue(NopValidationDefaults.NopClientValidationCacheKey, out var item))
@@ -81,7 +86,7 @@ public class NopClientModelValidatorProvider : IClientModelValidatorProvider
 
         cache ??= new Dictionary<Type, IValidatorDescriptor>();
         httpContextAccessor.HttpContext.Items[NopValidationDefaults.NopClientValidationCacheKey] = cache;
-        
+
         if (cache.TryGetValue(modelType, out var cachedDescriptor))
             return cachedDescriptor;
 
@@ -105,13 +110,11 @@ public class NopClientModelValidatorProvider : IClientModelValidatorProvider
     public void CreateValidators(ClientValidatorProviderContext context)
     {
         var descriptor = GetCachedDescriptor(context);
-
         if (descriptor == null)
             return;
 
-        var propertyName = context.ModelMetadata.PropertyName;
-
-        var validatorsWithRules = descriptor.GetRulesForMember(propertyName)
+        //prepare model validators
+        var validatorsWithRules = descriptor.GetRulesForMember(context.ModelMetadata.PropertyName)
             .Where(rule => !rule.HasCondition && !rule.HasAsyncCondition)
             .Select(rule => new { rule, components = rule.Components })
             .Where(t => t.components.Any())
@@ -122,22 +125,22 @@ public class NopClientModelValidatorProvider : IClientModelValidatorProvider
             .Select(t => t.modelValidatorForProperty)
             .ToList();
 
+        //and add them as items
         if (validatorsWithRules.Any())
         {
             foreach (var propVal in validatorsWithRules)
-                context.Results.Add(new ClientValidatorItem { Validator = propVal, IsReusable = false });
+                context.Results.Add(new() { Validator = propVal, IsReusable = false });
         }
         else
         {
             //add one ClientValidatorItem with IsReusable = false to prevent MVC cache the list of validators
-            context.Results.Add(new ClientValidatorItem { IsReusable = false });
+            context.Results.Add(new() { IsReusable = false });
         }
 
         if (!context.ModelMetadata.ModelType.IsValueType || Nullable.GetUnderlyingType(context.ModelMetadata.ModelType) != null)
             return;
 
         var fvHasRequiredRule = context.Results.Any(x => x.Validator is RequiredClientValidator);
-
         if (!fvHasRequiredRule)
             return;
 

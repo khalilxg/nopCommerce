@@ -45,8 +45,8 @@ public abstract partial class ClientValidatorBase : IClientModelValidator
             message = defaultErrorMessage(validatorConfiguration.LanguageManager);
         }
 
-        return messageFormatter(validatorConfiguration.MessageFormatterFactory()
-            .AppendPropertyName(Rule.GetDisplayName(null))).BuildMessage(message);
+        return messageFormatter(validatorConfiguration.MessageFormatterFactory().AppendPropertyName(Rule.GetDisplayName(null)))
+            .BuildMessage(message);
     }
 
     #endregion

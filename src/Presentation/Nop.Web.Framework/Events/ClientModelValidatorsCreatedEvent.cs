@@ -10,7 +10,7 @@ public partial class ClientModelValidatorsCreatedEvent
     #region Fields
 
     protected readonly Dictionary<Type, IClientModelValidator> _clientValidatorFactories;
-    
+
     #endregion
 
     #region Ctor

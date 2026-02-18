@@ -1,6 +1,5 @@
 ﻿using FluentValidation;
 using FluentValidation.Internal;
-using FluentValidation.Resources;
 using FluentValidation.Validators;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 

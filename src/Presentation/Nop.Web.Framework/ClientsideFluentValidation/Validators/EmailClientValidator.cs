@@ -26,7 +26,7 @@ public partial class EmailClientValidator : ClientValidatorBase
     public override void AddValidation(ClientModelValidationContext context)
     {
         var message = BuildMessage(messageFormatter => messageFormatter, languageManager => languageManager.GetString("EmailValidator"));
-        
+
         context.Attributes.TryAdd("data-val", "true");
         context.Attributes.TryAdd("data-val-email", message);
     }

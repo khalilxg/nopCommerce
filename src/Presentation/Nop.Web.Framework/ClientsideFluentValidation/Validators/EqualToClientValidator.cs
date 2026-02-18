@@ -34,8 +34,7 @@ public partial class EqualToClientValidator : ClientValidatorBase
 
         var validatorConfiguration = EngineContext.Current.Resolve<ValidatorConfiguration>();
 
-        var comparisonDisplayName =
-            validatorConfiguration.DisplayNameResolver(Rule.TypeToValidate, propertyToCompare, null)
+        var comparisonDisplayName = validatorConfiguration.DisplayNameResolver(Rule.TypeToValidate, propertyToCompare, null)
             ?? CommonHelper.SplitCamelCaseWord(propertyToCompare.Name);
 
         var message = BuildMessage(messageFormater => messageFormater.AppendArgument("ComparisonValue", comparisonDisplayName),

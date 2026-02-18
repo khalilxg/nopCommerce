@@ -3,10 +3,10 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Nop.Core.Infrastructure;
 using Nop.Web.Framework.Validators;
 
 namespace Nop.Web.Framework.Mvc.Filters;
-
 
 /// <summary>
 /// Represents filter attribute that validates models using FluentValidation before executing an action
@@ -89,46 +89,37 @@ public sealed class AutoValidationAttribute : TypeFilterAttribute
             if (IgnoreFilter(context))
                 return;
 
-            var controllerActionDescriptor = (ControllerActionDescriptor)context.ActionDescriptor;
-            var serviceProvider = context.HttpContext.RequestServices;
+            if (context.ActionDescriptor is not ControllerActionDescriptor controllerActionDescriptor)
+                return;
 
+            //validate action parameters
             foreach (var parameter in controllerActionDescriptor.Parameters)
             {
-                if (!context.ActionArguments.TryGetValue(parameter.Name, out var subject))
+                if (!context.ActionArguments.TryGetValue(parameter.Name, out var subject) || subject is null)
                     continue;
 
-                var parameterType = subject?.GetType();
-
-                if (subject == null || parameterType is not
-                        { IsClass: true, IsEnum: false, IsValueType: false, IsPrimitive: false } ||
-                    serviceProvider.GetService(typeof(IValidator<>).MakeGenericType(parameterType)) is not IValidator
-                        validator)
-                {
-                    continue;
-                }
-
-                IValidationContext validationContext;
-
-                if (parameter is IParameterInfoParameterDescriptor infoParameterDescriptor &&
-                    infoParameterDescriptor.ParameterInfo.CustomAttributes.Any(ca =>
-                        ca.AttributeType == typeof(ValidateAttribute)))
-                {
-                    validationContext = ValidationContext<object>.CreateWithOptions(subject,
-                        options => options.IncludeRuleSets(NopValidationDefaults.ValidationRuleSet));
-                }
-                else
-                {
-                    validationContext = new ValidationContext<object>(subject);
-                }
-
-                var validationResult =
-                    await validator.ValidateAsync(validationContext, context.HttpContext.RequestAborted);
-
-                if (validationResult.IsValid)
+                var parameterType = subject.GetType();
+                if (parameterType is not { IsClass: true, IsEnum: false, IsValueType: false, IsPrimitive: false })
                     continue;
 
-                foreach (var error in validationResult.Errors)
-                    context.ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
+                //try to get associated validator
+                if (EngineContext.Current.Resolve(typeof(IValidator<>).MakeGenericType(parameterType)) is not IValidator validator)
+                    continue;
+
+                //prepare validation context
+                var validateWithRuleSet = parameter is IParameterInfoParameterDescriptor infoParameterDescriptor
+                    && infoParameterDescriptor.ParameterInfo.CustomAttributes.Any(ca => ca.AttributeType == typeof(ValidateAttribute));
+                var validationContext = validateWithRuleSet
+                    ? ValidationContext<object>.CreateWithOptions(subject, options => options.IncludeRuleSets(NopValidationDefaults.ValidationRuleSet))
+                    : new ValidationContext<object>(subject);
+
+                //get validation result
+                var validationResult = await validator.ValidateAsync(validationContext, context.HttpContext.RequestAborted);
+                if (!validationResult.IsValid)
+                {
+                    foreach (var error in validationResult.Errors)
+                        context.ModelState.AddModelError(error.PropertyName, error.ErrorMessage);
+                }
             }
         }
 
