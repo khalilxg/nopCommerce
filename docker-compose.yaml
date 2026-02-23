@@ -1,9 +1,9 @@
 services:
     nopcommerce_web:
         build: .
-        container_name: nopcommerce
+        #container_name: nopcommerce
         ports:
-            - "80:80"
+            - "80"
         depends_on:
             - nopcommerce_database
     nopcommerce_database:
