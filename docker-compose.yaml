@@ -1,18 +1,49 @@
+#services:
+#    nopcommerce_web:
+#        build: .
+#        container_name: nopcommerce
+#        ports:
+#            - "80"
+#        depends_on:
+#            - nopcommerce_database
+#    nopcommerce_database:
+#        image: "mcr.microsoft.com/mssql/server:2019-latest"
+#        container_name: nopcommerce_mssql_server
+#        environment:
+#            SA_PASSWORD: "nopCommerce_db_password"
+#            ACCEPT_EULA: "Y"
+#            MSSQL_PID: "Express"
+#
+#volumes:
+#      nopcommerce_data:            
+
 services:
-    nopcommerce_web:
-        build: .
-        container_name: nopcommerce
-        ports:
-            - "80"
-        depends_on:
-            - nopcommerce_database
-    nopcommerce_database:
-        image: "mcr.microsoft.com/mssql/server:2019-latest"
-        container_name: nopcommerce_mssql_server
-        environment:
-            SA_PASSWORD: "nopCommerce_db_password"
-            ACCEPT_EULA: "Y"
-            MSSQL_PID: "Express"
+  nopcommerce_web:
+    build: .
+    container_name: nopcommerce
+    ports:
+      - '80'
+    depends_on:
+      - nopcommerce_database
+    volumes:
+      # This keeps your settings, themes, and uploaded images safe
+      - nopcommerce_web_data:/app/App_Data
+      - nopcommerce_bin:/app/bin
+      - nopcommerce_wwwroot:/app/wwwroot
+
+  nopcommerce_database:
+    image: 'mcr.microsoft.com/mssql/server:2019-latest'
+    container_name: nopcommerce_mssql_server
+    environment:
+      SA_PASSWORD: nopCommerce_db_password
+      ACCEPT_EULA: 'Y'
+      MSSQL_PID: Express
+    volumes:
+      # This is the most important part - it keeps your actual SQL data
+      - nopcommerce_sql_data:/var/opt/mssql
 
 volumes:
-  nopcommerce_data:            
+  nopcommerce_web_data:
+  nopcommerce_bin:
+  nopcommerce_wwwroot:
+  nopcommerce_sql_data:
